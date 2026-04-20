@@ -31,12 +31,16 @@ export default function Navbar() {
           <div className="h-8 w-28 bg-secondary/50 rounded-full animate-pulse" />
         ) : user ? (
           <>
-            {/* Credit badge */}
-            <div className="flex items-center gap-1.5 bg-secondary/60 border border-primary/20 px-3 py-1.5 rounded-full">
+            {/* Credit badge + buy link */}
+            <Link
+              href="/credits"
+              className="flex items-center gap-1.5 bg-secondary/60 border border-primary/20 px-3 py-1.5 rounded-full hover:border-primary/50 hover:bg-secondary transition-all group"
+            >
               <RiCoinLine className="text-primary text-sm" />
               <span className="text-xs font-bold text-foreground/80">{credits}</span>
               <span className="text-xs text-foreground/40">credits</span>
-            </div>
+              <span className="text-xs text-primary font-semibold ml-1 opacity-0 group-hover:opacity-100 transition-opacity">+ Buy</span>
+            </Link>
 
             {/* Generate CTA */}
             <Link
