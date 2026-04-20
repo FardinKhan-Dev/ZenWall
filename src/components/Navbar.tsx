@@ -40,6 +40,12 @@ export default function Navbar() {
 
             {/* Generate CTA */}
             <Link
+              href="/dashboard"
+              className="text-sm font-semibold text-foreground/70 hover:text-foreground transition-colors px-3 py-2 rounded-xl hover:bg-secondary/30"
+            >
+              Dashboard
+            </Link>
+            <Link
               href="/"
               className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold glow hover:scale-105 active:scale-95 transition-all shadow-md hover:shadow-primary/30"
             >
