@@ -1,81 +1,177 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useState } from "react";
-import { RiMagicLine, RiImageLine, RiWindyLine } from "react-icons/ri";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  RiMagicLine, RiImageLine, RiWindyLine,
+  RiDownloadLine, RiSparklingLine, RiLeafLine, RiAlertLine
+} from "react-icons/ri";
+import { useAuthStore } from "@/store/useAuthStore";
+import { supabase } from "@/lib/supabase";
+
+const PRESETS = [
+  "Zen garden in morning mist",
+  "Minimalist pine forest, geometric",
+  "Soft watercolor meadow at golden hour",
+  "Ethereal mountain peaks, line art style",
+];
+
+const SUPABASE_FUNCTION_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-wallpaper`
+  : "";
 
 export default function Home() {
-  const [prompt, setPrompt] = useState("");
+  const router = useRouter();
+  const { user, isHydrated, deductCredit } = useAuthStore();
 
-  const presets = [
-    "Zen garden in morning mist",
-    "Minimalist pine forest, geometric",
-    "Soft watercolor meadow",
-    "Ethereal mountain peaks, line art",
-  ];
+  const [prompt, setPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Redirect to auth if not logged in (only after hydration)
+  useEffect(() => {
+    if (isHydrated && !user) {
+      router.push("/auth");
+    }
+  }, [isHydrated, user, router]);
+
+  const handleGenerate = async () => {
+    if (!prompt.trim() || isGenerating || !user) return;
+
+    setError(null);
+    setGeneratedUrl(null);
+    setIsGenerating(true);
+
+    try {
+      // Get the current session JWT for the Authorization header
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Session expired. Please sign in again.");
+
+      const res = await fetch(SUPABASE_FUNCTION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // 402 = Insufficient credits
+        if (res.status === 402) throw new Error("You're out of credits. Purchase more to continue generating.");
+        throw new Error(data.error || "Generation failed. Please try again.");
+      }
+
+      setGeneratedUrl(data.imageUrl);
+      deductCredit(); // Optimistically update the credit count in the UI
+    } catch (err: any) {
+      setError(err?.message || "Something went wrong.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!generatedUrl) return;
+    const res = await fetch(generatedUrl);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `zenwall-${Date.now()}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Show nothing while hydrating to avoid flash
+  if (!isHydrated) return null;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col gap-12">
-      {/* Hero Section */}
-      <section className="text-center flex flex-col items-center gap-6">
+    <div className="max-w-5xl mx-auto px-6 py-12 flex flex-col gap-12">
+
+      {/* Hero */}
+      <section className="text-center flex flex-col items-center gap-5">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-bold border border-primary/20 flex items-center gap-2"
         >
-          <RiMagicLine />
-          AI-Powered Serenity
+          <RiSparklingLine />
+          Powered by Gemini Imagen 4
         </motion.div>
-        
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
+
+        <motion.h1
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground max-w-3xl"
         >
-          Generate Your <span className="text-secondary italic">Perfect</span> Peace.
+          Generate Your <span className="text-primary italic">Perfect</span> Peace.
         </motion.h1>
-        
-        <motion.p 
-          initial={{ opacity: 0, y: 20 }}
+
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-lg text-foreground/70 max-w-2xl"
+          className="text-lg text-foreground/60 max-w-xl"
         >
-          Describe your dream wallpaper and let our AI craft a high-resolution masterpiece for your desktop or mobile.
+          Describe your dream wallpaper. We&apos;ll generate a high-resolution masterpiece in seconds.
         </motion.p>
       </section>
 
-      {/* Generator Box */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
+      {/* Generator Card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.3 }}
-        className="glass rounded-3xl p-2 md:p-4 glow group"
+        className="glass rounded-3xl p-3 md:p-4 border border-border/30 shadow-xl"
       >
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <div className="flex-grow w-full relative">
-            <input 
-              type="text"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="A minimalist forest with soft sunlight..."
-              className="w-full bg-transparent border-none focus:ring-0 text-xl px-4 py-6 placeholder:text-foreground/30 text-foreground font-medium"
-            />
-          </div>
-          <button className="w-full md:w-auto bg-primary text-primary-foreground px-10 py-5 rounded-2xl text-lg font-bold flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg hover:shadow-primary/20 group-hover:px-12">
-            <RiWindyLine className="text-2xl" />
-            Generate
+        <div className="flex flex-col md:flex-row items-center gap-3">
+          <input
+            type="text"
+            id="prompt-input"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
+            placeholder="A misty forest with soft morning light..."
+            disabled={isGenerating}
+            className="flex-grow w-full bg-transparent border-none focus:ring-0 text-lg px-4 py-5 placeholder:text-foreground/25 text-foreground font-medium disabled:opacity-50"
+          />
+          <button
+            id="generate-btn"
+            onClick={handleGenerate}
+            disabled={isGenerating || !prompt.trim()}
+            className="w-full md:w-auto bg-primary text-white px-8 py-5 rounded-2xl text-base font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 glow"
+          >
+            {isGenerating ? (
+              <>
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Generating...
+              </>
+            ) : (
+              <>
+                <RiWindyLine className="text-xl" />
+                Generate
+              </>
+            )}
           </button>
         </div>
 
         {/* Presets */}
-        <div className="px-4 py-4 flex flex-wrap gap-2 border-t border-border/20 mt-2">
-          {presets.map((p, i) => (
-            <button 
+        <div className="px-4 py-3 flex flex-wrap gap-2 border-t border-border/20 mt-1">
+          {PRESETS.map((p, i) => (
+            <button
               key={i}
               onClick={() => setPrompt(p)}
-              className="text-xs font-semibold bg-secondary/50 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-all border border-primary/10"
+              disabled={isGenerating}
+              className="text-xs font-semibold bg-secondary/50 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-all border border-primary/10 disabled:opacity-40"
             >
               {p}
             </button>
@@ -83,53 +179,110 @@ export default function Home() {
         </div>
       </motion.div>
 
-      {/* Features Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-        <div className="p-8 rounded-3xl bg-secondary/30 border border-primary/10 flex flex-col gap-4">
-          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg">
-            <RiImageLine />
-          </div>
-          <h3 className="font-bold text-xl">High Resolution</h3>
-          <p className="text-foreground/60 leading-relaxed">Generated in crystal clear 4K resolution, perfectly optimized for any screen size.</p>
-        </div>
-        
-        <div className="p-8 rounded-3xl bg-secondary/30 border border-primary/10 flex flex-col gap-4">
-          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg">
-            <RiWindyLine />
-          </div>
-          <h3 className="font-bold text-xl">Style Profiles</h3>
-          <p className="text-foreground/60 leading-relaxed">Choose from dozens of preset styles: Minimalism, Watercolor, Cyberpunk, or Realistic.</p>
-        </div>
+      {/* Error */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-5 py-4 rounded-2xl -mt-6"
+          >
+            <RiAlertLine className="text-lg flex-shrink-0" />
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        <div className="p-8 rounded-3xl bg-secondary/30 border border-primary/10 flex flex-col gap-4">
-          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg">
-            <RiLeafLine className="text-white" />
-          </div>
-          <h3 className="font-bold text-xl">Cross Platform</h3>
-          <p className="text-foreground/60 leading-relaxed">Access your collection on Web, Desktop, or Mobile with seamless syncing.</p>
-        </div>
-      </section>
+      {/* Loading Skeleton */}
+      <AnimatePresence>
+        {isGenerating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="w-full aspect-video rounded-3xl bg-secondary/30 border border-border/20 flex flex-col items-center justify-center gap-4 -mt-4"
+          >
+            <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center animate-pulse">
+              <RiLeafLine className="text-primary text-3xl" />
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-foreground">AI is painting your wallpaper...</p>
+              <p className="text-sm text-foreground/50 mt-1">This usually takes 10–20 seconds</p>
+            </div>
+            <div className="flex gap-1.5 mt-2">
+              {[0,1,2,3,4].map(i => (
+                <motion.div
+                  key={i}
+                  className="w-2 h-2 bg-primary rounded-full"
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.12 }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Generated Result */}
+      <AnimatePresence>
+        {generatedUrl && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col gap-4 -mt-4"
+          >
+            <div className="relative rounded-3xl overflow-hidden border border-border/20 shadow-2xl group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={generatedUrl}
+                alt={prompt}
+                className="w-full object-cover"
+              />
+              {/* Overlay on hover */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-end justify-end p-4 opacity-0 group-hover:opacity-100">
+                <button
+                  id="download-btn"
+                  onClick={handleDownload}
+                  className="flex items-center gap-2 bg-white/90 text-foreground px-5 py-2.5 rounded-xl text-sm font-bold backdrop-blur-sm hover:bg-white transition-all shadow-lg"
+                >
+                  <RiDownloadLine className="text-primary" />
+                  Download Wallpaper
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-foreground/40 text-center">
+              Prompt: &ldquo;{prompt}&rdquo;
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Features (only show when no result) */}
+      {!generatedUrl && !isGenerating && (
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-4">
+          {[
+            { icon: <RiImageLine />, title: "High Resolution", desc: "Generated in crystal-clear quality, ready for any screen." },
+            { icon: <RiMagicLine />, title: "Gemini Imagen 4", desc: "Google's latest image model for photorealistic & artistic results." },
+            { icon: <RiLeafLine />, title: "Stored Forever", desc: "Access all your generated wallpapers from your history anytime." },
+          ].map((f, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 + i * 0.1 }}
+              className="p-7 rounded-3xl bg-secondary/30 border border-primary/10 flex flex-col gap-3"
+            >
+              <div className="w-11 h-11 bg-primary rounded-xl flex items-center justify-center text-white text-xl shadow-md">
+                {f.icon}
+              </div>
+              <h3 className="font-bold text-base">{f.title}</h3>
+              <p className="text-sm text-foreground/55 leading-relaxed">{f.desc}</p>
+            </motion.div>
+          ))}
+        </section>
+      )}
     </div>
-  );
-}
-
-function RiLeafLine({ className }: { className?: string }) {
-  return (
-    <svg 
-      stroke="currentColor" 
-      fill="none" 
-      strokeWidth="2" 
-      viewBox="0 0 24 24" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className} 
-      height="1em" 
-      width="1em" 
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8a8 8 0 0 1-8 8Z"></path>
-      <path d="M7 21c-4.3-1.47-6-4.66-6-8a7 7 0 0 1 2.3-5.24"></path>
-      <path d="M11 20c0-5.33 1.33-10.67 4-16"></path>
-    </svg>
   );
 }
