@@ -1,10 +1,11 @@
-import { create } from 'zustand';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
-import { getUserProfile } from '@/lib/auth';
+import { create } from "zustand";
+import { User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import { getUserProfile, ensureProfile } from "@/lib/auth";
 
 interface AuthState {
   user: User | null;
+  profile: { first_name?: string; last_name?: string } | null;
   credits: number;
   isLoading: boolean;
   isHydrated: boolean;
@@ -14,11 +15,41 @@ interface AuthState {
   setCredits: (credits: number) => void;
   deductCredit: () => void;
   initialize: () => Promise<void>;
+  signOut: () => Promise<void>;
   reset: () => void;
+}
+
+/**
+ * Loads the profile for a session user.
+ * If the profile doesn't exist (account deleted from DB while JWT is still valid),
+ * signs the user out automatically to clear the stale session.
+ */
+async function syncProfile(userId: string, email: string) {
+  let profile = await getUserProfile(userId);
+
+  if (!profile) {
+    // Try to create the profile (handles pre-trigger signups)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const meta = user?.user_metadata;
+    await ensureProfile(userId, email, meta?.first_name, meta?.last_name);
+    profile = await getUserProfile(userId);
+  }
+
+  // Profile still missing after ensureProfile → account was deleted from DB
+  // Sign out to clear the stale JWT from localStorage
+  if (!profile) {
+    await supabase.auth.signOut();
+    return null;
+  }
+
+  return profile;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
+  profile: null,
   credits: 0,
   isLoading: true,
   isHydrated: false,
@@ -26,41 +57,57 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setUser: (user) => set({ user }),
   setCredits: (credits) => set({ credits }),
   deductCredit: () => set((state) => ({ credits: Math.max(0, state.credits - 1) })),
-  reset: () => set({ user: null, credits: 0, isLoading: false }),
+  reset: () => set({ user: null, profile: null, credits: 0, isLoading: false, isHydrated: true }),
+
+  signOut: async () => {
+    await supabase.auth.signOut();
+    set({ user: null, profile: null, credits: 0 });
+  },
 
   /**
    * Initializes the auth state on app load.
    * - Gets the current session from Supabase
    * - Fetches the user's credit balance
-   * - Listens for auth state changes (sign in / sign out)
+   * - Auto-signs out if the account was deleted from the DB
+   * - Listens for future auth state changes
    */
   initialize: async () => {
     set({ isLoading: true });
 
-    // 1. Get initial session
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
     if (session?.user) {
-      set({ user: session.user });
-      try {
-        const profile = await getUserProfile(session.user.id);
-        set({ credits: profile.credits ?? 0 });
-      } catch {
-        set({ credits: 0 });
+      const profile = await syncProfile(session.user.id, session.user.email ?? "");
+      if (profile) {
+        set({
+          user: session.user,
+          profile: { first_name: profile.first_name, last_name: profile.last_name },
+          credits: profile.credits ?? 0,
+        });
       }
+      // If profile is null, syncProfile already called signOut —
+      // the onAuthStateChange listener below will call reset()
     }
 
     set({ isLoading: false, isHydrated: true });
 
-    // 2. Listen for future auth changes (sign in, sign out, token refresh)
+    // Listen for future auth changes (sign in, sign out, token refresh)
     supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_OUT") {
+        get().reset();
+        return;
+      }
+
       if (session?.user) {
-        set({ user: session.user });
-        try {
-          const profile = await getUserProfile(session.user.id);
-          set({ credits: profile.credits ?? 0 });
-        } catch {
-          set({ credits: 0 });
+        const profile = await syncProfile(session.user.id, session.user.email ?? "");
+        if (profile) {
+          set({
+            user: session.user,
+            profile: { first_name: profile.first_name, last_name: profile.last_name },
+            credits: profile.credits ?? 0,
+          });
         }
       } else {
         get().reset();

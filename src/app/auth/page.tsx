@@ -1,39 +1,81 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { RiLeafLine, RiMailLine, RiLockLine, RiGoogleFill, RiEyeLine, RiEyeOffLine, RiArrowRightLine, RiSparklingLine } from "react-icons/ri";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  RiLeafLine,
+  RiMailLine,
+  RiLockLine,
+  RiGoogleFill,
+  RiEyeLine,
+  RiEyeOffLine,
+  RiArrowRightLine,
+  RiSparklingLine,
+  RiUserLine,
+} from "react-icons/ri";
 import { signIn, signUp, signInWithGoogle } from "@/lib/auth";
+import { z } from "zod";
+
+const authSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(2, "First name is too short").optional(),
+  lastName: z.string().min(2, "Last name is too short").optional(),
+});
 
 type AuthMode = "signin" | "signup";
 
-export default function AuthPage() {
+function AuthContent() {
   const router = useRouter();
-  const [mode, setMode] = useState<AuthMode>("signin");
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/generate";
+  const initialMode = (searchParams.get("mode") as AuthMode) || "signin";
+
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setFieldErrors({});
+
+    // Zod Validation
+    const result = authSchema.safeParse({ email, password, firstName, lastName });
+
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        if (issue.path[0]) {
+          errors[issue.path[0] as string] = issue.message;
+        }
+      });
+      setFieldErrors(errors);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       if (mode === "signup") {
-        await signUp(email, password);
+        await signUp(email, password, firstName, lastName);
         setSuccess("Account created! Check your email to confirm your account.");
       } else {
         await signIn(email, password);
-        router.push("/");
+        router.push(redirectPath);
       }
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong. Please try again.");
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error?.message || "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -43,13 +85,14 @@ export default function AuthPage() {
     setError(null);
     try {
       await signInWithGoogle();
-    } catch (err: any) {
-      setError(err?.message || "Google sign-in failed.");
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error?.message || "Google sign-in failed.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-16 relative overflow-hidden">
+    <div className=" flex items-center justify-center px-4 relative overflow-hidden">
       {/* Ambient background blobs */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
@@ -84,7 +127,12 @@ export default function AuthPage() {
             {(["signin", "signup"] as AuthMode[]).map((m) => (
               <button
                 key={m}
-                onClick={() => { setMode(m); setError(null); setSuccess(null); }}
+                suppressHydrationWarning
+                onClick={() => {
+                  setMode(m);
+                  setError(null);
+                  setSuccess(null);
+                }}
                 className={`flex-1 py-2 text-sm font-semibold rounded-xl transition-all ${
                   mode === m
                     ? "bg-primary text-white shadow-md"
@@ -98,8 +146,9 @@ export default function AuthPage() {
 
           {/* Google OAuth */}
           <button
+            suppressHydrationWarning
             onClick={handleGoogle}
-            className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl border border-border bg-card/50 hover:bg-secondary/40 hover:border-primary/30 transition-all font-semibold text-sm mb-5 group"
+            className="w-full flex items-center justify-center gap-3 px-3 py-2.5 rounded-2xl border border-border bg-card/50 hover:bg-secondary/40 hover:border-primary/30 transition-all font-semibold text-sm mb-5 group"
           >
             <RiGoogleFill className="text-lg text-red-500" />
             Continue with Google
@@ -115,40 +164,91 @@ export default function AuthPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {mode === "signup" && (
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <div className="relative">
+                      <RiUserLine className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
+                      <input
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First Name"
+                        className={`w-full pl-11 pr-4 py-2.5 bg-card/60 border rounded-2xl text-sm font-medium placeholder:text-foreground/30 focus:outline-none transition-all ${fieldErrors.firstName ? "border-red-500/50 ring-2 ring-red-500/10" : "border-border/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/10"}`}
+                      />
+                    </div>
+                    {fieldErrors.firstName && (
+                      <p className="text-[10px] text-red-500 font-bold ml-2">
+                        {fieldErrors.firstName}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last Name"
+                        className={`w-full px-4 py-2.5 bg-card/60 border rounded-2xl text-sm font-medium placeholder:text-foreground/30 focus:outline-none transition-all ${fieldErrors.lastName ? "border-red-500/50 ring-2 ring-red-500/10" : "border-border/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/10"}`}
+                      />
+                    </div>
+                    {fieldErrors.lastName && (
+                      <p className="text-[10px] text-red-500 font-bold ml-2">
+                        {fieldErrors.lastName}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Email */}
-            <div className="relative">
-              <RiMailLine className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                required
-                className="w-full pl-11 pr-4 py-3.5 bg-card/60 border border-border/50 rounded-2xl text-sm font-medium placeholder:text-foreground/30 focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all"
-              />
+            <div className="space-y-1">
+              <div className="relative">
+                <RiMailLine className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  autoComplete="email"
+                  className={`w-full pl-11 pr-4 py-2.5 bg-card/60 border rounded-2xl text-sm font-medium placeholder:text-foreground/30 focus:outline-none transition-all ${fieldErrors.email ? "border-red-500/50 ring-2 ring-red-500/10" : "border-border/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/10"}`}
+                />
+              </div>
+              {fieldErrors.email && (
+                <p className="text-[10px] text-red-500 font-bold ml-2">{fieldErrors.email}</p>
+              )}
             </div>
 
             {/* Password */}
-            <div className="relative">
-              <RiLockLine className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                required
-                minLength={6}
-                className="w-full pl-11 pr-12 py-3.5 bg-card/60 border border-border/50 rounded-2xl text-sm font-medium placeholder:text-foreground/30 focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/10 transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
-              >
-                {showPassword ? <RiEyeOffLine /> : <RiEyeLine />}
-              </button>
+            <div className="space-y-1">
+              <div className="relative">
+                <RiLockLine className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40" />
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  className={`w-full pl-11 pr-12 py-2.5 bg-card/60 border rounded-2xl text-sm font-medium placeholder:text-foreground/30 focus:outline-none transition-all ${fieldErrors.password ? "border-red-500/50 ring-2 ring-red-500/10" : "border-border/50 focus:border-primary/60 focus:ring-2 focus:ring-primary/10"}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <RiEyeOffLine /> : <RiEyeLine />}
+                </button>
+              </div>
+              {fieldErrors.password && (
+                <p className="text-[10px] text-red-500 font-bold ml-2">{fieldErrors.password}</p>
+              )}
             </div>
 
             {/* Error / Success */}
@@ -177,6 +277,7 @@ export default function AuthPage() {
 
             {/* Submit */}
             <button
+              suppressHydrationWarning
               type="submit"
               disabled={isLoading}
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-primary text-white rounded-2xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 glow"
@@ -184,8 +285,19 @@ export default function AuthPage() {
               {isLoading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                   </svg>
                   {mode === "signin" ? "Signing in..." : "Creating account..."}
                 </span>
@@ -202,19 +314,33 @@ export default function AuthPage() {
           {mode === "signin" && (
             <p className="text-center text-xs text-foreground/40 mt-5">
               Don&apos;t have an account?{" "}
-              <button onClick={() => setMode("signup")} className="text-primary font-semibold hover:underline">
+              <button
+                suppressHydrationWarning
+                onClick={() => setMode("signup")}
+                className="text-primary font-semibold hover:underline"
+              >
                 Sign up for free
               </button>
             </p>
           )}
           {mode === "signup" && (
             <p className="text-center text-xs text-foreground/40 mt-5">
-              By signing up, you get{" "}
-              <span className="text-primary font-bold">5 free credits</span> to start generating.
+              By signing up, you get <span className="text-primary font-bold">5 free credits</span>{" "}
+              to start generating.
             </p>
           )}
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense
+      fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}
+    >
+      <AuthContent />
+    </Suspense>
   );
 }

@@ -1,27 +1,5 @@
 @import "tailwindcss";
-
-:root {
-  --background: #fbfdf8;     /* Lightest Mint */
-  --foreground: #718355;     /* Dark Dusty Olive Text */
-  --card: #e9f5db;           /* Frosted Mint surfaces */
-  --card-foreground: #718355;
-  --popover: #fbfdf8;
-  --popover-foreground: #718355;
-  --primary: #87986a;        /* Palm Leaf Actions */
-  --primary-foreground: #ffffff;
-  --secondary: #cfe1b9;      /* Tea Green */
-  --secondary-foreground: #718355;
-  --muted: #b5c99a;          /* Muted Olive */
-  --muted-foreground: #718355;
-  --accent: #b5c99a;
-  --accent-foreground: #718355;
-  --destructive: #ef4444;
-  --destructive-foreground: #f8fafc;
-  --border: #cfe1b9;         /* Tea Green Borders */
-  --input: #cfe1b9;
-  --ring: #87986a;
-  --radius: 0.75rem;
-}
+@import "./theme.css";
 
 @theme inline {
   --color-background: var(--background);
@@ -39,7 +17,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -47,20 +25,61 @@
 
 body {
   background: var(--background);
+  background-attachment: fixed;
+  background-size: cover;
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
-/* Glassmorphism utility */
+/* 💎 MODERN GLASSMORPHISM UTILITY */
 .glass {
-  background: rgba(233, 245, 219, 0.4);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(207, 225, 185, 0.3);
+  border: 1px solid var(--glass-border);
 }
 
+/* ✨ PREMIUM GLOW UTILITY */
 .glow {
-  box-shadow: 0 0 20px rgba(135, 152, 106, 0.3);
+  box-shadow: 0 0 20px var(--glow-color);
+}
+
+/* 🖱️ CELESTIAL SCROLLBAR */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ffffff14;
+  border-radius: 20px;
+  border: 2px solid #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Firefox Support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1a1a1a #0a0a0a;
+}
+
+/* Helper to hide scrollbar */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }

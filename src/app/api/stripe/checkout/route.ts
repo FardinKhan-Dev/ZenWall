@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe, CREDIT_PACKAGES } from "@/lib/stripe";
+import { stripe } from "@/lib/stripe";
+import { CREDIT_PACKAGES } from "@/lib/credit-packages";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: NextRequest) {
@@ -25,7 +26,10 @@ export async function POST(req: NextRequest) {
 
     // Verify the JWT and get the user
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser(token);
     if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -59,8 +63,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (err: any) {
-    console.error("[Stripe Checkout Error]", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("[Stripe Checkout Error]", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

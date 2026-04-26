@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/components/AuthProvider";
+import ClientLayout from "@/components/ClientLayout";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -10,9 +11,25 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "ZenWall — AI Wallpaper Generator",
-  description: "Generate stunning, high-resolution AI wallpapers with a serene, minimal aesthetic. Powered by Gemini Imagen.",
-  keywords: ["AI wallpaper", "wallpaper generator", "Gemini Imagen", "nature wallpaper"],
+  title: "ZenWall | Signature Atmospheric Noir Wallpapers",
+  description:
+    "Create premium, minimalist, and atmospheric noir wallpapers with AI. Isolated subjects, cinematic lighting, and professional photography aesthetics.",
+  keywords: [
+    "AI Wallpaper",
+    "Zen Black",
+    "Minimalist Wallpapers",
+    "Atmospheric Noir",
+    "Custom AI Art",
+  ],
+  authors: [{ name: "ZenWall Team" }],
+  openGraph: {
+    title: "ZenWall | AI-Powered Atmosphere",
+    description: "Generate high-end atmospheric noir wallpapers for your devices.",
+    url: "https://zenwall.app",
+    siteName: "ZenWall",
+    locale: "en_US",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -21,14 +38,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${outfit.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col selection:bg-primary/20 selection:text-primary">
+    <html lang="en" className="dark scroll-smooth">
+      <body
+        className={`${outfit.variable} font-sans h-full selection:bg-primary/20 selection:text-primary`}
+      >
         <AuthProvider>
-          <Navbar />
-          <main className="flex-grow">{children}</main>
-          <footer className="py-8 text-center text-sm text-foreground/40 border-t border-border/20">
-            © {new Date().getFullYear()} ZenWall · AI-Powered Wallpapers
-          </footer>
+          <ClientLayout>
+            <Navbar />
+            <main className="flex-grow">{children}</main>
+          </ClientLayout>
         </AuthProvider>
       </body>
     </html>

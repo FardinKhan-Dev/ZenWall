@@ -1,0 +1,50 @@
+/* 
+  🎨 ZENWALL DESIGN TOKENS
+  Theme: Celestial Dark (Mockup Style)
+*/
+
+:root {
+  /* 🌌 Deep Celestial Background */
+  --background: radial-gradient(circle at 50% 0%, #13133c 0%, #0a0a0a 100%);
+
+  --foreground: #ffffff;
+
+  --card: rgba(26, 26, 26, 0.6);
+  --card-foreground: #ffffff;
+
+  --primary: #363cf0; /* Vibrant Purple */
+  --primary-foreground: #ffffff;
+
+  --secondary: #1a1a1a; /* Deep Surface */
+  --secondary-foreground: #a1a1aa;
+
+  --muted: #71717a;
+  --muted-foreground: #a1a1aa;
+
+  --accent: #a78bfa; /* Soft Violet */
+  --accent-foreground: #ffffff;
+
+  --border: #ffffff14;
+  --input: rgba(26, 26, 26, 0.4);
+  --ring: #363cf0;
+
+  --radius: 1.25rem;
+  --glass-bg: rgba(20, 20, 20, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glow-color: rgba(139, 92, 246, 0.15);
+}
+
+/* 🌿 PRESET: SAGE & OLIVE (Legacy) */
+.theme-sage {
+  --background: linear-gradient(135deg, #fbfdf8 0%, #e9f5db 50%, #cfe1b9 100%);
+  --foreground: #718355;
+  --card: rgba(255, 255, 255, 0.7);
+  --card-foreground: #444444;
+  --primary: #87986a;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #333333;
+  --muted: #999999;
+  --muted-foreground: #333333;
+  --border: rgba(0, 0, 0, 0.1);
+}

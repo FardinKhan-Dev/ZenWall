@@ -5,12 +5,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  RiLeafLine, RiSparklingLine, RiDownloadLine, RiDeleteBinLine,
-  RiUserLine, RiCoinLine, RiCalendarLine, RiImageAddLine,
-  RiRefreshLine, RiAlertLine
+  RiLeafLine,
+  RiSparklingLine,
+  RiDownloadLine,
+  RiDeleteBinLine,
+  RiUserLine,
+  RiCoinLine,
+  RiCalendarLine,
+  RiImageAddLine,
+  RiRefreshLine,
+  RiAlertLine,
 } from "react-icons/ri";
+import Image from "next/image";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getUserWallpapers, deleteWallpaper } from "@/lib/wallpapers";
+
+const PAGE_SIZE = 12;
 
 interface Wallpaper {
   id: string;
@@ -21,60 +31,96 @@ interface Wallpaper {
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
+}
+
+async function handleDownload(url: string) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  const timestamp = Date.now();
+  a.download = `zenwall-${timestamp}.png`;
+  a.click();
+  URL.revokeObjectURL(objectUrl);
 }
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, credits, isHydrated } = useAuthStore();
+  const { user, profile, credits, isHydrated } = useAuthStore();
 
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
   // Auth guard
   useEffect(() => {
     if (isHydrated && !user) router.push("/auth");
   }, [isHydrated, user, router]);
 
-  const fetchWallpapers = useCallback(async () => {
-    if (!user) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getUserWallpapers(user.id);
-      setWallpapers(data);
-    } catch (err: any) {
-      setError(err?.message || "Failed to load your wallpapers.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
+  const fetchWallpapers = useCallback(
+    async (isInitial = true) => {
+      if (!user) return;
+
+      if (isInitial) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      setError(null);
+      try {
+        const currentOffset = isInitial ? 0 : offset;
+        const data = await getUserWallpapers(user.id, PAGE_SIZE, currentOffset);
+
+        if (isInitial) {
+          setWallpapers(data);
+          setOffset(data.length);
+        } else {
+          setWallpapers((prev) => [...prev, ...data]);
+          setOffset((prev) => prev + data.length);
+        }
+
+        setHasMore(data.length === PAGE_SIZE);
+      } catch (err: unknown) {
+        const error = err as Error;
+        setError(error?.message || "Failed to load your wallpapers.");
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [user, offset]
+  );
 
   useEffect(() => {
-    if (isHydrated && user) fetchWallpapers();
-  }, [isHydrated, user, fetchWallpapers]);
-
-  const handleDownload = async (url: string, prompt: string) => {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = `zenwall-${Date.now()}.png`;
-    a.click();
-    URL.revokeObjectURL(objectUrl);
-  };
+    if (isHydrated) {
+      queueMicrotask(() => {
+        if (user?.id) {
+          fetchWallpapers(true);
+        } else {
+          setIsLoading(false);
+        }
+      });
+    }
+  }, [user?.id, isHydrated, fetchWallpapers]);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
       await deleteWallpaper(id);
       setWallpapers((prev) => prev.filter((w) => w.id !== id));
-    } catch (err: any) {
-      setError(err?.message || "Failed to delete wallpaper.");
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error?.message || "Failed to delete wallpaper.");
     } finally {
       setDeletingId(null);
     }
@@ -84,15 +130,15 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col gap-10">
-
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">My Dashboard</h1>
-          <p className="text-sm text-foreground/50 mt-1">Your generated wallpaper history</p>
+          <h1 className="text-4xl font-black tracking-tight text-foreground uppercase">
+            My Collection
+          </h1>
         </div>
         <Link
-          href="/"
+          href="/generate"
           className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold glow hover:scale-105 active:scale-95 transition-all shadow-md"
         >
           <RiSparklingLine />
@@ -109,18 +155,20 @@ export default function DashboardPage() {
         >
           {/* Avatar & Email */}
           <div className="flex items-center gap-4 sm:col-span-1">
-            <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg glow flex-shrink-0">
+            <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg glow shrink-0">
               <RiUserLine className="text-white text-2xl" />
             </div>
             <div className="overflow-hidden">
-              <p className="font-bold text-foreground truncate">{user.email}</p>
-              <p className="text-xs text-foreground/50">Member</p>
+              <h2 className="font-black text-foreground truncate text-lg">
+                {profile?.first_name + " " + profile?.last_name || "Zen Artist"}
+              </h2>
+              <p className="text-xs text-foreground/60 font-medium">{user?.email}</p>
             </div>
           </div>
 
           {/* Credits */}
           <div className="flex items-center gap-3 bg-secondary/40 rounded-2xl px-5 py-4 border border-primary/15">
-            <RiCoinLine className="text-primary text-2xl flex-shrink-0" />
+            <RiCoinLine className="text-primary text-2xl shrink-0" />
             <div>
               <p className="text-2xl font-extrabold text-foreground">{credits}</p>
               <p className="text-xs text-foreground/50">Credits Remaining</p>
@@ -129,7 +177,7 @@ export default function DashboardPage() {
 
           {/* Total wallpapers */}
           <div className="flex items-center gap-3 bg-secondary/40 rounded-2xl px-5 py-4 border border-primary/15">
-            <RiImageAddLine className="text-primary text-2xl flex-shrink-0" />
+            <RiImageAddLine className="text-primary text-2xl shrink-0" />
             <div>
               <p className="text-2xl font-extrabold text-foreground">{wallpapers.length}</p>
               <p className="text-xs text-foreground/50">Wallpapers Generated</p>
@@ -147,9 +195,12 @@ export default function DashboardPage() {
             exit={{ opacity: 0 }}
             className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-5 py-4 rounded-2xl"
           >
-            <RiAlertLine className="text-lg flex-shrink-0" />
+            <RiAlertLine className="text-lg shrink-0" />
             {error}
-            <button onClick={fetchWallpapers} className="ml-auto flex items-center gap-1 font-bold hover:underline">
+            <button
+              onClick={() => fetchWallpapers(true)}
+              className="ml-auto flex items-center gap-1 font-bold hover:underline"
+            >
               <RiRefreshLine /> Retry
             </button>
           </motion.div>
@@ -160,7 +211,10 @@ export default function DashboardPage() {
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="rounded-3xl overflow-hidden border border-border/20 animate-pulse">
+            <div
+              key={i}
+              className="rounded-3xl overflow-hidden border border-border/20 animate-pulse"
+            >
               <div className="aspect-video bg-secondary/40" />
               <div className="p-4 flex flex-col gap-2">
                 <div className="h-3 bg-secondary/60 rounded-full w-3/4" />
@@ -183,7 +237,9 @@ export default function DashboardPage() {
           </div>
           <div>
             <p className="text-xl font-bold text-foreground">No wallpapers yet</p>
-            <p className="text-sm text-foreground/50 mt-1">Generate your first one — it only takes a few seconds.</p>
+            <p className="text-sm text-foreground/50 mt-1">
+              Generate your first one — it only takes a few seconds.
+            </p>
           </div>
           <Link
             href="/"
@@ -206,33 +262,53 @@ export default function DashboardPage() {
               transition={{ delay: i * 0.06 }}
               className="group relative rounded-3xl overflow-hidden border border-border/20 shadow-md hover:shadow-xl hover:border-primary/20 transition-all bg-card"
             >
-              {/* Image */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={w.image_url}
-                alt={w.prompt}
-                className="w-full aspect-video object-cover group-hover:scale-[1.03] transition-transform duration-500"
-              />
+              <Link
+                href={`/wallpaper/${w.id}`}
+                className="relative aspect-video overflow-hidden block"
+              >
+                <Image
+                  src={w.image_url}
+                  alt={w.prompt}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                />
+              </Link>
 
-              {/* Hover overlay with actions */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-4 gap-2">
+              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end p-4 gap-2 pointer-events-none">
                 <button
-                  title="Download"
-                  onClick={() => handleDownload(w.image_url, w.prompt)}
-                  className="flex items-center gap-1.5 bg-white/90 text-foreground px-3 py-2 rounded-xl text-xs font-bold backdrop-blur-sm hover:bg-white transition-all"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload(w.image_url);
+                  }}
+                  className="flex items-center gap-1.5 bg-primary text-foreground px-3 py-2 rounded-xl text-xs font-bold backdrop-blur-sm hover:bg-primary/70 transition-all pointer-events-auto"
                 >
-                  <RiDownloadLine className="text-primary" /> Download
+                  <RiDownloadLine className="text-white" /> Download
                 </button>
                 <button
                   title="Delete"
                   disabled={deletingId === w.id}
-                  onClick={() => handleDelete(w.id)}
-                  className="flex items-center gap-1.5 bg-red-500/90 text-white px-3 py-2 rounded-xl text-xs font-bold backdrop-blur-sm hover:bg-red-500 transition-all disabled:opacity-60 ml-auto"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(w.id);
+                  }}
+                  className="flex items-center gap-1.5 bg-red-500/90 text-white px-3 py-2 rounded-xl text-xs font-bold backdrop-blur-sm hover:bg-red-500 transition-all disabled:opacity-60 ml-auto pointer-events-auto"
                 >
                   {deletingId === w.id ? (
                     <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
                     </svg>
                   ) : (
                     <RiDeleteBinLine />
@@ -241,7 +317,6 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              {/* Prompt & date */}
               <div className="p-4 flex flex-col gap-1">
                 <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">
                   {w.prompt}
@@ -253,6 +328,42 @@ export default function DashboardPage() {
               </div>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* Load More */}
+      {!isLoading && hasMore && wallpapers.length > 0 && (
+        <div className="flex justify-center pb-10">
+          <button
+            onClick={() => fetchWallpapers(false)}
+            disabled={isLoadingMore}
+            className="flex items-center gap-2 px-8 py-3 bg-secondary/50 border border-border/40 rounded-2xl text-sm font-bold text-foreground/70 hover:text-foreground hover:border-primary/40 transition-all disabled:opacity-50"
+          >
+            {isLoadingMore ? (
+              <>
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Loading more...
+              </>
+            ) : (
+              <>
+                <RiRefreshLine /> Load More Wallpapers
+              </>
+            )}
+          </button>
         </div>
       )}
     </div>
