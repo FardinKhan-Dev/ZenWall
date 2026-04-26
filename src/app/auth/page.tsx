@@ -16,6 +16,7 @@ import {
 } from "react-icons/ri";
 import { signIn, signUp, signInWithGoogle } from "@/lib/auth";
 import { z } from "zod";
+import { toast } from "sonner";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -40,17 +41,19 @@ function AuthContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
     setFieldErrors({});
 
-    // Zod Validation
-    const result = authSchema.safeParse({ email, password, firstName, lastName });
+    const result = authSchema.safeParse({
+      email,
+      password,
+      firstName: mode === "signup" ? firstName : undefined,
+      lastName: mode === "signup" ? lastName : undefined,
+    });
 
     if (!result.success) {
       const errors: Record<string, string> = {};
@@ -67,10 +70,19 @@ function AuthContent() {
 
     try {
       if (mode === "signup") {
-        await signUp(email, password, firstName, lastName);
-        setSuccess("Account created! Check your email to confirm your account.");
+        const data = await signUp(email, password, firstName, lastName);
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+          setError("This email is already registered. Try signing in.");
+          return;
+        }
+        toast.success("Account created!", {
+          description: "Check your email to confirm your account.",
+        });
       } else {
         await signIn(email, password);
+        toast.success("Welcome back!", {
+          description: "Sign in successful.",
+        });
         router.push(redirectPath);
       }
     } catch (err: unknown) {
@@ -85,6 +97,7 @@ function AuthContent() {
     setError(null);
     try {
       await signInWithGoogle();
+      toast.success("Google Sign-in successful!");
     } catch (err: unknown) {
       const error = err as Error;
       setError(error?.message || "Google sign-in failed.");
@@ -130,8 +143,6 @@ function AuthContent() {
                 suppressHydrationWarning
                 onClick={() => {
                   setMode(m);
-                  setError(null);
-                  setSuccess(null);
                 }}
                 className={`flex-1 py-2 text-sm font-semibold rounded-xl transition-all ${
                   mode === m
@@ -251,26 +262,16 @@ function AuthContent() {
               )}
             </div>
 
-            {/* Error / Success */}
+            {/* Error Banner */}
             <AnimatePresence>
               {error && (
                 <motion.p
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="text-sm text-red-500 bg-red-50 px-4 py-2.5 rounded-xl border border-red-100"
+                  className="text-sm text-red-500 bg-red-50 px-4 py-2.5 rounded-xl border border-red-100 mb-2"
                 >
                   {error}
-                </motion.p>
-              )}
-              {success && (
-                <motion.p
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="text-sm text-primary bg-primary/10 px-4 py-2.5 rounded-xl border border-primary/20"
-                >
-                  {success}
                 </motion.p>
               )}
             </AnimatePresence>

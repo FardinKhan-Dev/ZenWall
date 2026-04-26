@@ -32,6 +32,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { Toaster } from "sonner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -46,6 +48,7 @@ export default function RootLayout({
           <ClientLayout>
             <Navbar />
             <main className="flex-grow">{children}</main>
+            <Toaster position="bottom-right" richColors theme="dark" closeButton />
           </ClientLayout>
         </AuthProvider>
       </body>

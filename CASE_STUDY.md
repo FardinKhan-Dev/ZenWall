@@ -62,6 +62,8 @@ ZenWall wasn't just built to look good; it was built to perform. Through rigorou
 ## 🎨 Design Philosophy: "Atmospheric Noir"
 The UI utilizes **Glassmorphism** and **3D Perspective transforms**. By using `framer-motion` for scroll-linked animations, we created a "3D Peek" effect on the landing page that pulls users into the app's world before they even log in.
 
+To maintain this atmosphere during interaction, we replaced standard alert boxes with **Sonner Stacked Toasts**. This ensures that every event—from credit top-ups to art generation—is met with elegant, non-intrusive feedback that matches the platform's dark aesthetic.
+
 ![ZenWall Dashboard Vault](/ZenWall_Dashboard.webp)
 
 ---

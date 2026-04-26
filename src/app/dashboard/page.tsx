@@ -19,6 +19,7 @@ import {
 import Image from "next/image";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getUserWallpapers, deleteWallpaper } from "@/lib/wallpapers";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 12;
 
@@ -38,15 +39,23 @@ function formatDate(iso: string) {
 }
 
 async function handleDownload(url: string) {
-  const res = await fetch(url);
-  const blob = await res.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = objectUrl;
-  const timestamp = Date.now();
-  a.download = `zenwall-${timestamp}.png`;
-  a.click();
-  URL.revokeObjectURL(objectUrl);
+  toast.info("Starting Download...", {
+    description: "Preparing your high-res art.",
+  });
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    const timestamp = Date.now();
+    a.download = `zenwall-${timestamp}.png`;
+    a.click();
+    URL.revokeObjectURL(objectUrl);
+    toast.success("Download Successful!");
+  } catch (err) {
+    toast.error("Download Failed");
+  }
 }
 
 export default function DashboardPage() {
@@ -56,7 +65,6 @@ export default function DashboardPage() {
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -92,7 +100,9 @@ export default function DashboardPage() {
         setHasMore(data.length === PAGE_SIZE);
       } catch (err: unknown) {
         const error = err as Error;
-        setError(error?.message || "Failed to load your wallpapers.");
+        toast.error("Fetch Error", {
+          description: error?.message || "Failed to load wallpapers.",
+        });
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
@@ -118,9 +128,14 @@ export default function DashboardPage() {
     try {
       await deleteWallpaper(id);
       setWallpapers((prev) => prev.filter((w) => w.id !== id));
+      toast.success("Wallpaper Deleted", {
+        description: "It has been removed from your vault.",
+      });
     } catch (err: unknown) {
       const error = err as Error;
-      setError(error?.message || "Failed to delete wallpaper.");
+      toast.error("Deletion Failed", {
+        description: error?.message || "Please try again later.",
+      });
     } finally {
       setDeletingId(null);
     }
@@ -186,26 +201,7 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* Error */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-5 py-4 rounded-2xl"
-          >
-            <RiAlertLine className="text-lg shrink-0" />
-            {error}
-            <button
-              onClick={() => fetchWallpapers(true)}
-              className="ml-auto flex items-center gap-1 font-bold hover:underline"
-            >
-              <RiRefreshLine /> Retry
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Error - Handled by Toast */}
 
       {/* Loading Skeletons */}
       {isLoading && (
@@ -226,7 +222,7 @@ export default function DashboardPage() {
       )}
 
       {/* Empty State */}
-      {!isLoading && wallpapers.length === 0 && !error && (
+      {!isLoading && wallpapers.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

@@ -14,6 +14,7 @@ import {
 import { useAuthStore } from "@/store/useAuthStore";
 import { supabase } from "@/lib/supabase";
 import { CREDIT_PACKAGES } from "@/lib/credit-packages";
+import { toast } from "sonner";
 
 export default function CreditsPage() {
   const router = useRouter();
@@ -21,7 +22,6 @@ export default function CreditsPage() {
   const { user, credits, isHydrated, initialize } = useAuthStore();
 
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [banner, setBanner] = useState<{ type: "success" | "cancel"; msg: string } | null>(null);
 
   // Auth guard - REMOVED to allow public viewing
   // useEffect(() => {
@@ -31,13 +31,13 @@ export default function CreditsPage() {
   // Handle redirect back from Stripe
   useEffect(() => {
     if (searchParams.get("success") === "true") {
-      queueMicrotask(() => {
-        setBanner({ type: "success", msg: "🎉 Payment successful! Your credits have been added." });
-        initialize(); // Re-fetch credits from DB
+      toast.success("Payment Successful!", {
+        description: "Your credits have been added to your balance.",
       });
+      initialize(); // Re-fetch credits from DB
     } else if (searchParams.get("cancelled") === "true") {
-      queueMicrotask(() => {
-        setBanner({ type: "cancel", msg: "Payment cancelled. No charges were made." });
+      toast.info("Payment Cancelled", {
+        description: "No charges were made.",
       });
     }
   }, [searchParams, initialize]);
@@ -69,14 +69,17 @@ export default function CreditsPage() {
 
       // Use assign instead of direct href modification to satisfy compiler immutability rules
       if (data.url) {
+        toast.info("Redirecting to Stripe...", {
+          description: "Please complete your purchase on the secure checkout page.",
+        });
         window.location.assign(data.url);
       }
     } catch (err: unknown) {
       const error = err as Error;
-      queueMicrotask(() => {
-        setBanner({ type: "cancel", msg: error?.message || "Something went wrong." });
-        setLoadingId(null);
+      toast.error("Checkout Error", {
+        description: error?.message || "Failed to initiate payment.",
       });
+      setLoadingId(null);
     }
   };
 
@@ -116,30 +119,7 @@ export default function CreditsPage() {
         </motion.p>
       </div>
 
-      {/* Success / Cancel Banner */}
-      <AnimatePresence>
-        {banner && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className={`px-5 py-4 rounded-2xl text-sm font-medium flex items-center gap-3 ${
-              banner.type === "success"
-                ? "bg-primary/10 border border-primary/30 text-primary"
-                : "bg-orange-50 border border-orange-200 text-orange-600"
-            }`}
-          >
-            {banner.type === "success" ? <RiCheckLine className="text-xl" /> : <RiSparklingLine />}
-            {banner.msg}
-            <button
-              onClick={() => setBanner(null)}
-              className="ml-auto font-bold opacity-60 hover:opacity-100"
-            >
-              ✕
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Success / Cancel Banner - Handled by Toast */}
 
       {/* Packages Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

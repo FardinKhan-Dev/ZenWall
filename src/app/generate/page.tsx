@@ -8,6 +8,7 @@ import { RiMagicLine, RiDownloadLine, RiSparklingLine, RiLeafLine } from "react-
 import { useAuthStore } from "@/store/useAuthStore";
 import { supabase } from "@/lib/supabase";
 import { z } from "zod";
+import { toast } from "sonner";
 
 const promptSchema = z
   .string()
@@ -28,7 +29,6 @@ export default function GeneratePage() {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(false);
 
   // Check for pre-filled prompt from landing page
@@ -54,11 +54,11 @@ export default function GeneratePage() {
     // Validate with Zod
     const validation = promptSchema.safeParse(prompt.trim());
     if (!validation.success) {
-      setError(validation.error.issues[0].message);
+      toast.error("Invalid Prompt", {
+        description: validation.error.issues[0].message,
+      });
       return;
     }
-
-    setError(null);
     setGeneratedUrl(null);
     setIsGenerating(true);
     setCooldown(true);
@@ -86,16 +86,23 @@ export default function GeneratePage() {
           funcError.message?.includes("Insufficient credits") ||
           (funcError instanceof Error && (funcError as { status?: number }).status === 402);
 
-        setError(isInsufficientCredits ? "You're out of credits." : funcError.message);
+        toast.error("Generation Failed", {
+          description: isInsufficientCredits ? "You're out of credits." : funcError.message,
+        });
         setIsGenerating(false);
         return;
       }
 
       setGeneratedUrl(data.imageUrl);
       deductCredit();
+      toast.success("Masterpiece Ready!", {
+        description: "Your atmospheric wallpaper has been saved to the vault.",
+      });
     } catch (err: unknown) {
       const error = err as Error;
-      setError(error?.message || "Something went wrong.");
+      toast.error("Error", {
+        description: error?.message || "Something went wrong.",
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -103,14 +110,22 @@ export default function GeneratePage() {
 
   const handleDownload = async () => {
     if (!generatedUrl) return;
-    const res = await fetch(generatedUrl);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `zenwall-${Date.now()}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
+    toast.info("Preparing Download...", {
+      description: "Optimizing your high-res wallpaper.",
+    });
+    try {
+      const res = await fetch(generatedUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `zenwall-${Date.now()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Download Started!");
+    } catch (err) {
+      toast.error("Download Failed");
+    }
   };
 
   const firstName =
@@ -141,8 +156,6 @@ export default function GeneratePage() {
     );
   }
 
-  // If we're hydrated and still no user, the Auth Guard (useEffect) will handle redirect.
-  // We return null here to avoid rendering the page for guest users.
   if (!user) return null;
 
   return (
@@ -223,68 +236,56 @@ export default function GeneratePage() {
           ))}
         </motion.div>
 
-        {/* Display Result or Error */}
-        <AnimatePresence mode="wait">
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="p-6 rounded-3xl bg-red-500/5 border border-red-500/20 text-red-400 text-sm text-center font-bold"
-            >
-              {error}
-            </motion.div>
-          )}
+        {/* Display Result or Error - Handled by Toast */}
 
-          {isGenerating && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="w-full aspect-video rounded-3xl bg-secondary/30 border border-border/20 flex flex-col items-center justify-center gap-4 shadow-inner"
-            >
-              <div className="flex gap-1.5">
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="w-3 h-3 bg-primary rounded-full shadow-[0_0_10px_rgba(139,92,246,0.5)]"
-                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                  />
-                ))}
-              </div>
-              <p className="text-sm font-bold text-foreground/70 tracking-wide uppercase">
-                Painting Excellence...
-              </p>
-            </motion.div>
-          )}
-
-          {generatedUrl && !isGenerating && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              <div className="relative rounded-[2.5rem] overflow-hidden border border-border/20 shadow-2xl group ring-1 ring-white/5 aspect-video">
-                <Image
-                  src={generatedUrl}
-                  alt={prompt}
-                  fill
-                  sizes="(max-width: 1200px) 100vw, 1200px"
-                  className="object-cover"
+        {isGenerating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-full aspect-video rounded-3xl bg-secondary/30 border border-border/20 flex flex-col items-center justify-center gap-4 shadow-inner"
+          >
+            <div className="flex gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-3 h-3 bg-primary rounded-full shadow-[0_0_10px_rgba(139,92,246,0.5)]"
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-end justify-end p-6 md:p-10 opacity-0 group-hover:opacity-100">
-                  <button
-                    onClick={handleDownload}
-                    className="flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-2xl hover:scale-105 active:scale-95 transition-all"
-                  >
-                    <RiDownloadLine className="text-xl" />
-                    Download Masterpiece
-                  </button>
-                </div>
+              ))}
+            </div>
+            <p className="text-sm font-bold text-foreground/70 tracking-wide uppercase">
+              Painting Excellence...
+            </p>
+          </motion.div>
+        )}
+
+        {generatedUrl && !isGenerating && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            <div className="relative rounded-[2.5rem] overflow-hidden border border-border/20 shadow-2xl group ring-1 ring-white/5 aspect-video">
+              <Image
+                src={generatedUrl}
+                alt={prompt}
+                fill
+                sizes="(max-width: 1200px) 100vw, 1200px"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-end justify-end p-6 md:p-10 opacity-0 group-hover:opacity-100">
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-2xl text-sm font-bold shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                >
+                  <RiDownloadLine className="text-xl" />
+                  Download Masterpiece
+                </button>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
       </div>
       <footer className="pt-20 text-center text-sm text-foreground/40 border-t border-border/10">
         © {new Date().getFullYear()} ZenWall · AI-Powered Wallpapers

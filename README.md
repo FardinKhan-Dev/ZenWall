@@ -55,6 +55,7 @@
 *   **Image Pipeline**: [Cloudinary](https://cloudinary.com/) (Signed Uploads)
 *   **Animations**: [Framer Motion](https://www.framer.com/motion/)
 *   **Styling**: Tailwind CSS 4.0
+*   **Notifications**: [Sonner](https://sonner.emilkowal.ski/) (High-performance stacked toasts)
 *   **Validation**: [Zod](https://zod.dev/)
 *   **Testing**: [Jest](https://jestjs.io/) & React Testing Library
 *   **Quality Control**: ESLint & Prettier
