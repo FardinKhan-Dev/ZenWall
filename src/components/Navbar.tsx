@@ -40,6 +40,12 @@ export default function Navbar() {
   };
 
   const menuItems = [
+    {
+      label: `Credits: ${credits}`,
+      icon: <RiCoinLine className="text-primary" />,
+      onClick: () => router.push("/credits"),
+      className: "md:hidden border-b border-border/20 mb-1 pb-3",
+    },
     { label: "Dashboard", icon: <RiSparklingLine />, onClick: () => router.push("/dashboard") },
     {
       label: "Sign Out",
@@ -67,8 +73,7 @@ export default function Navbar() {
       <div className="flex items-center gap-6">
         {user ? (
           <>
-            {/* Credits Pill (Now Clickable) */}
-            <Link href="/credits">
+            <Link href="/credits" className="hidden md:flex">
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -115,7 +120,9 @@ export default function Navbar() {
                           item.onClick();
                           setIsDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all text-sm font-bold ${item.color || "text-foreground/80 hover:text-foreground"}`}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all text-sm font-bold ${
+                          item.color || "text-foreground/80 hover:text-foreground"
+                        } ${item.className || ""}`}
                       >
                         <span className="text-lg">{item.icon}</span>
                         {item.label}
@@ -128,18 +135,20 @@ export default function Navbar() {
           </>
         ) : (
           <>
+          <div className="flex items-center gap-3 md:gap-6">
             <Link
               href="/auth"
-              className="text-sm font-bold text-foreground/60 hover:text-foreground transition-colors hidden sm:block"
+              className="text-sm font-bold text-foreground/60 hover:text-foreground transition-colors"
             >
               Log in
             </Link>
             <Link
-              href="/credits"
-              className="bg-primary text-white px-8 py-2.5 rounded-2xl text-sm font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 glow"
+              href="/auth"
+              className="bg-primary text-white px-5 md:px-8 py-2.5 rounded-2xl text-sm font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 glow"
             >
               Get Started
             </Link>
+          </div>
           </>
         )}
       </div>

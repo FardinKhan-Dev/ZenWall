@@ -170,7 +170,7 @@ function GenerateContent() {
   if (!user) return null;
 
   return (
-    <div className="h-full flex flex-col items-center justify-center px-6">
+    <div className="h-full flex flex-col items-center justify-center px-6 pt-28 md:pt-0">
       <div className="w-full max-w-3xl space-y-12">
         {/* Celestial Greeting */}
         <div className="text-center space-y-4">

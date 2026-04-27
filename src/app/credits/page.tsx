@@ -90,7 +90,7 @@ function CreditsContent() {
       {/* Navigation */}
       <div className="flex justify-start">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/generate")}
           className="group flex items-center gap-2 text-foreground/60 hover:text-foreground font-bold transition-all"
         >
           <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">

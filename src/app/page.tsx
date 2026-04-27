@@ -79,7 +79,7 @@ export default function LandingPage() {
       {/* 🚀 HERO SECTION */}
       <section
         ref={containerRef}
-        className="relative min-h-[120vh] flex flex-col items-center pt-20 px-6 overflow-visible"
+        className="relative min-h-[120vh] flex flex-col items-center pt-44 md:pt-20 px-6 overflow-visible"
       >
         {/* Animated Background Glow */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full -z-10" />
@@ -141,7 +141,7 @@ export default function LandingPage() {
         <div className="mt-20 w-[95%] max-w-6xl z-20 perspective-[2000px]">
           <motion.div
             style={{ rotateX, scale, y: translateY }}
-            className="relative rounded-[2.5rem] overflow-hidden border border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] bg-background group"
+            className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] bg-background group"
           >
             {/* Glossy Overlay */}
             <div className="absolute inset-0 bg-linear-to-tr from-white/5 to-transparent pointer-events-none z-10" />
