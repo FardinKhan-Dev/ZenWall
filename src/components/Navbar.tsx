@@ -51,15 +51,16 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 w-full py-4 px-6 md:px-12 flex items-center justify-between bg-transparent backdrop-blur-xs z-50">
-      {/* Brand Logo */}
-      {isPublicRoute && (
-        <Link href={user ? "/generate" : "/"} className="flex items-center gap-2 group">
-          <RiLeafLine className="text-primary text-3xl group-hover:rotate-12 transition-transform" />
-          <span className="font-extrabold text-2xl tracking-tighter text-foreground">
-            Zen<span className="text-primary italic">Wall</span>
-          </span>
-        </Link>
-      )}
+      {/* Brand Logo - Always visible on mobile, visible on desktop only for public routes */}
+      <Link 
+        href={user ? "/generate" : "/"} 
+        className={`flex items-center gap-2 group ${!isPublicRoute ? "md:hidden" : ""}`}
+      >
+        <RiLeafLine className="text-primary text-3xl group-hover:rotate-12 transition-transform" />
+        <span className="font-extrabold text-2xl tracking-tighter text-foreground">
+          Zen<span className="text-primary italic">Wall</span>
+        </span>
+      </Link>
 
       <div className="flex-1" />
 
