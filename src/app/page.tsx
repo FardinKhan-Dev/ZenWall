@@ -147,7 +147,7 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-linear-to-tr from-white/5 to-transparent pointer-events-none z-10" />
 
             <Image
-              src="/Screenshot.webp"
+              src="/landing_page.png"
               alt="ZenWall App Dashboard Preview"
               width={1400}
               height={800}
@@ -200,7 +200,7 @@ export default function LandingPage() {
             >
               <div className="text-center group-hover:scale-110 transition-transform duration-700 w-full h-full">
                 <Image
-                  src="/Screenshot_2.webp"
+                  src="/generation.png"
                   alt="ZenWall Dashboard Interface showing minimal design"
                   width={1000}
                   height={600}
@@ -279,7 +279,7 @@ export default function LandingPage() {
             >
               <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-transparent opacity-50" />
               <Image
-                src="/ZenWall_Dashboard.webp"
+                src="/dashboard.png"
                 alt="ZenWall Private Dashboard Vault"
                 width={1000}
                 height={600}
