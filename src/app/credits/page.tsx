@@ -16,26 +16,26 @@ import { supabase } from "@/lib/supabase";
 import { CREDIT_PACKAGES } from "@/lib/credit-packages";
 import { toast } from "sonner";
 
-export default function CreditsPage() {
+import { Suspense } from "react";
+
+function CreditsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, credits, isHydrated, initialize } = useAuthStore();
 
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  // Auth guard - REMOVED to allow public viewing
-  // useEffect(() => {
-  //   if (isHydrated && !user) router.push("/auth");
-  // }, [isHydrated, user, router]);
-
   // Handle redirect back from Stripe
   useEffect(() => {
-    if (searchParams.get("success") === "true") {
+    const success = searchParams.get("success");
+    const cancelled = searchParams.get("cancelled");
+
+    if (success === "true") {
       toast.success("Payment Successful!", {
         description: "Your credits have been added to your balance.",
       });
       initialize(); // Re-fetch credits from DB
-    } else if (searchParams.get("cancelled") === "true") {
+    } else if (cancelled === "true") {
       toast.info("Payment Cancelled", {
         description: "No charges were made.",
       });
@@ -67,7 +67,6 @@ export default function CreditsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      // Use assign instead of direct href modification to satisfy compiler immutability rules
       if (data.url) {
         toast.info("Redirecting to Stripe...", {
           description: "Please complete your purchase on the secure checkout page.",
@@ -119,8 +118,6 @@ export default function CreditsPage() {
         </motion.p>
       </div>
 
-      {/* Success / Cancel Banner - Handled by Toast */}
-
       {/* Packages Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {CREDIT_PACKAGES.map((pkg, i) => (
@@ -135,7 +132,6 @@ export default function CreditsPage() {
                 : "border-border/30 bg-card hover:border-primary/30 hover:shadow-lg"
             }`}
           >
-            {/* Popular badge */}
             {pkg.popular && (
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1 rounded-full shadow-md">
                 Most Popular
@@ -143,7 +139,6 @@ export default function CreditsPage() {
             )}
 
             <div className="flex flex-col gap-5 grow">
-              {/* Icon & Name */}
               <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center ${pkg.popular ? "bg-primary" : "bg-secondary"}`}
@@ -153,7 +148,6 @@ export default function CreditsPage() {
                 <span className="font-bold text-lg">{pkg.label}</span>
               </div>
 
-              {/* Credits */}
               <div>
                 <p className="text-4xl font-extrabold text-foreground tracking-tight">
                   {pkg.credits}
@@ -166,7 +160,6 @@ export default function CreditsPage() {
                 </p>
               </div>
 
-              {/* What you get */}
               <ul className="flex flex-col gap-2 text-sm text-foreground/70">
                 <li className="flex items-center gap-2">
                   <RiCheckLine className="text-primary shrink-0" /> {pkg.credits} AI wallpaper
@@ -181,7 +174,6 @@ export default function CreditsPage() {
               </ul>
             </div>
 
-            {/* CTA */}
             <button
               id={`buy-${pkg.id}`}
               onClick={() => {
@@ -235,7 +227,6 @@ export default function CreditsPage() {
         ))}
       </div>
 
-      {/* Trust signals */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-foreground/40 pt-4">
         <div className="flex items-center gap-2">
           <RiShieldCheckLine className="text-primary" /> Secured by Stripe
@@ -248,5 +239,25 @@ export default function CreditsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CreditsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen flex items-center justify-center bg-background">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="text-primary"
+          >
+            <RiSparklingLine size={40} />
+          </motion.div>
+        </div>
+      }
+    >
+      <CreditsContent />
+    </Suspense>
   );
 }

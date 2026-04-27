@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/useAuthStore";
+import { deleteWallpaper } from "@/lib/wallpapers";
+import { toast } from "sonner";
 import Image from "next/image";
 import {
   RiArrowLeftLine,
@@ -24,7 +26,7 @@ interface Wallpaper {
 export default function WallpaperDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { deleteWallpaper } = useAuthStore();
+  const { user } = useAuthStore();
   const [wallpaper, setWallpaper] = useState<Wallpaper | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -50,14 +52,22 @@ export default function WallpaperDetailPage() {
 
   const handleDownload = async () => {
     if (!wallpaper) return;
-    const res = await fetch(wallpaper.image_url);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `zenwall-${wallpaper.id}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
+    toast.info("Preparing Download...", {
+      description: "Optimizing your high-res wallpaper.",
+    });
+    try {
+      const res = await fetch(wallpaper.image_url);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `zenwall-${wallpaper.id}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Download Started!");
+    } catch (err) {
+      toast.error("Download Failed");
+    }
   };
 
   const handleDelete = async () => {
@@ -65,9 +75,15 @@ export default function WallpaperDetailPage() {
     setIsDeleting(true);
     try {
       await deleteWallpaper(wallpaper.id);
+      toast.success("Artwork Deleted", {
+        description: "It has been removed from your collection.",
+      });
       router.push("/dashboard");
-    } catch (err) {
-      console.error("Delete failed:", err);
+    } catch (err: unknown) {
+      const error = err as Error;
+      toast.error("Delete Failed", {
+        description: error?.message || "Please try again later.",
+      });
       setIsDeleting(false);
     }
   };
@@ -75,7 +91,9 @@ export default function WallpaperDetailPage() {
   const handleShare = () => {
     if (!wallpaper) return;
     navigator.clipboard.writeText(wallpaper.image_url);
-    alert("Image link copied to clipboard!");
+    toast.success("Link Copied!", {
+      description: "You can now share this masterpiece.",
+    });
   };
 
   if (isLoading) {
@@ -91,6 +109,8 @@ export default function WallpaperDetailPage() {
       </div>
     );
   }
+
+  if (!wallpaper) return null;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -132,12 +152,12 @@ export default function WallpaperDetailPage() {
           {/* Ambient Blur Background */}
           <div
             className="absolute inset-0 blur-[100px] opacity-20 scale-150 pointer-events-none"
-            style={{ backgroundImage: `url(${wallpaper.image_url})`, backgroundSize: "cover" }}
+            style={{ backgroundImage: `url(${wallpaper?.image_url})`, backgroundSize: "cover" }}
           />
 
           <Image
-            src={wallpaper.image_url}
-            alt={wallpaper.prompt}
+            src={wallpaper?.image_url || ""}
+            alt={wallpaper?.prompt || "ZenWall Artwork"}
             fill
             className="object-contain z-10"
             priority
@@ -149,7 +169,7 @@ export default function WallpaperDetailPage() {
               onClick={handleDownload}
               className="pointer-events-auto bg-primary text-white px-8 py-4 rounded-3xl font-black text-lg shadow-2xl scale-90 group-hover:scale-100 transition-transform flex items-center gap-3 glow"
             >
-              <RiDownloadLine /> Download 8K
+              <RiDownloadLine /> Download Cinematic
             </button>
           </div>
         </div>
@@ -181,7 +201,7 @@ export default function WallpaperDetailPage() {
             </div>
             <div className="p-4 rounded-2xl bg-secondary/30 border border-border/10">
               <p className="text-[10px] uppercase font-black text-muted-foreground mb-1">Quality</p>
-              <p className="text-sm font-bold text-foreground">Ultra 8K</p>
+              <p className="text-sm font-bold text-foreground">Cinematic High-Res</p>
             </div>
           </div>
 
@@ -189,7 +209,7 @@ export default function WallpaperDetailPage() {
             onClick={handleDownload}
             className="w-full py-5 bg-primary text-white rounded-3xl font-black text-lg shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 lg:hidden"
           >
-            <RiDownloadLine /> Download 8K
+            <RiDownloadLine /> Download Cinematic
           </button>
         </div>
       </main>

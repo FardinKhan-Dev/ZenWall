@@ -22,7 +22,9 @@ const PRESETS = [
   "Ethereal mountain peaks, line art style",
 ];
 
-export default function GeneratePage() {
+import { Suspense } from "react";
+
+function GenerateContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, profile, isHydrated, deductCredit } = useAuthStore();
@@ -291,5 +293,25 @@ export default function GeneratePage() {
         © {new Date().getFullYear()} ZenWall · AI-Powered Wallpapers
       </footer>
     </div>
+  );
+}
+
+export default function GeneratePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen flex items-center justify-center bg-background">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="text-primary"
+          >
+            <RiSparklingLine size={40} />
+          </motion.div>
+        </div>
+      }
+    >
+      <GenerateContent />
+    </Suspense>
   );
 }
