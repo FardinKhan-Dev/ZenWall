@@ -147,8 +147,8 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-linear-to-tr from-white/5 to-transparent pointer-events-none z-10" />
 
             <Image
-              src="/landing_page.png"
-              alt="ZenWall App Dashboard Preview"
+              src="/generation.png"
+              alt="ZenWall App Generation Preview"
               width={1400}
               height={800}
               priority
@@ -200,8 +200,8 @@ export default function LandingPage() {
             >
               <div className="text-center group-hover:scale-110 transition-transform duration-700 w-full h-full">
                 <Image
-                  src="/generation.png"
-                  alt="ZenWall Dashboard Interface showing minimal design"
+                  src="/prompt.png"
+                  alt="ZenWall Prompt Interface"
                   width={1000}
                   height={600}
                   className="w-full h-auto"
