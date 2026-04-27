@@ -47,7 +47,7 @@
 
 ## 🛠️ Tech Stack
 
-*   **Framework**: [Next.js 14+](https://nextjs.org/) (App Router & React Compiler)
+*   **Framework**: [Next.js 16+](https://nextjs.org/) (App Router & React Compiler)
 *   **Database & Auth**: [Supabase](https://supabase.com/)
 *   **State Management**: [Zustand](https://zustand-demo.pmnd.rs/) (Persistent Auth & Hydration)
 *   **Payments**: [Stripe API](https://stripe.com/)

@@ -84,7 +84,7 @@ export default function DashboardPage() {
         setIsLoadingMore(true);
       }
 
-      setError(null);
+
       try {
         const currentOffset = isInitial ? 0 : offset;
         const data = await getUserWallpapers(user.id, PAGE_SIZE, currentOffset);
