@@ -33,13 +33,22 @@ function GenerateContent() {
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(false);
 
-  // Check for pre-filled prompt from landing page
+  // Check for pre-filled prompt from landing page or Stripe success
   useEffect(() => {
     const prefilled = searchParams.get("prompt");
+    const success = searchParams.get("success");
+
     if (prefilled) {
       queueMicrotask(() => {
         setPrompt(prefilled);
       });
+    }
+
+    if (success === "true") {
+      toast.success("Payment Successful!", {
+        description: "Your credits have been added to your balance.",
+      });
+      useAuthStore.getState().initialize(); // Re-fetch credits from DB
     }
   }, [searchParams]);
 

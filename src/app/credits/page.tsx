@@ -10,6 +10,7 @@ import {
   RiFlashlightLine,
   RiShieldCheckLine,
   RiLeafLine,
+  RiArrowLeftLine,
 } from "react-icons/ri";
 import { useAuthStore } from "@/store/useAuthStore";
 import { supabase } from "@/lib/supabase";
@@ -86,6 +87,19 @@ function CreditsContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col gap-10">
+      {/* Navigation */}
+      <div className="flex justify-start">
+        <button
+          onClick={() => router.back()}
+          className="group flex items-center gap-2 text-foreground/60 hover:text-foreground font-bold transition-all"
+        >
+          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+            <RiArrowLeftLine size={20} />
+          </div>
+          <span>Back</span>
+        </button>
+      </div>
+
       {/* Header */}
       <div className="text-center flex flex-col items-center gap-4">
         {user && (

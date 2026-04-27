@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { createClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
 
 // Supabase admin client for privileged credit updates
 const supabaseAdmin = createClient(
@@ -49,6 +50,11 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`[Webhook] Granted ${credits} credits to user ${userId}`);
+    
+    // Refresh the pages to show new credit balance
+    revalidatePath("/generate");
+    revalidatePath("/credits");
+    revalidatePath("/dashboard");
   }
 
   return NextResponse.json({ received: true });

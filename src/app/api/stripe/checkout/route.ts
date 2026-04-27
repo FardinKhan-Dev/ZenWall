@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         credits: pkg.credits.toString(),
         package_id: pkg.id,
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/credits?success=true`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/generate?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/credits?cancelled=true`,
     });
 
