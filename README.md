@@ -22,26 +22,26 @@
 
 ### 1. Interactive Landing Page
 > Atmospheric noir aesthetic with 3D scroll effects.
-> ![Landing Page Showcase](/public/Screenshot.webp)
+> ![Landing Page Showcase](/public/landing_page.png)
 
 ### 2. AI Generation Interface
 > Simple, minimalist prompting with Zod-validated inputs.
-> ![Generation Interface](/public/Screenshot_2.webp)
+> ![Generation Interface](/public/generation.png)
 
 ### 3. Private Collection Vault
 > Manage your generated history with ease.
-> ![Dashboard Vault](/public/ZenWall_Dashboard.webp)
+> ![Dashboard Vault](/public/dashboard.png)
 
 ### 4. Secure Stripe Payments
 > Global payment processing for credit top-ups.
-> *(Placeholder: [Stripe_Checkout.webp])*
+> ![Stripe Checkout](/public/stripe_checkPout.png)
 
 ### 5. Mobile-First Experience
 > Fully responsive noir interface optimized for every screen size.
 > 
 > | Mobile Dashboard | Mobile Viewer |
 > | :---: | :---: |
-> | ![Mobile Screen 1](placeholder_mobile_1.webp) | ![Mobile Screen 2](placeholder_mobile_2.webp) |
+> | ![Mobile Screen 1](/public/mobile_dashboard.png) | ![Mobile Screen 2](/public/mobile_generation.png) |
 
 ---
 

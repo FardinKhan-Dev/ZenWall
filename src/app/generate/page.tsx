@@ -105,7 +105,13 @@ function GenerateContent() {
       }
 
       setGeneratedUrl(data.imageUrl);
+      
+      // Update global state immediately
       deductCredit();
+      if (data.wallpaper) {
+        useAuthStore.getState().addWallpaper(data.wallpaper);
+      }
+
       toast.success("Masterpiece Ready!", {
         description: "Your atmospheric wallpaper has been saved to the vault.",
       });

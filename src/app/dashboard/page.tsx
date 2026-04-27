@@ -17,18 +17,11 @@ import {
   RiAlertLine,
 } from "react-icons/ri";
 import Image from "next/image";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthStore, Wallpaper } from "@/store/useAuthStore";
 import { getUserWallpapers, deleteWallpaper } from "@/lib/wallpapers";
 import { toast } from "sonner";
 
 const PAGE_SIZE = 12;
-
-interface Wallpaper {
-  id: string;
-  prompt: string;
-  image_url: string;
-  created_at: string;
-}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -60,13 +53,21 @@ async function handleDownload(url: string) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, profile, credits, isHydrated } = useAuthStore();
+  const { 
+    user, 
+    profile, 
+    credits, 
+    isHydrated, 
+    wallpapers, 
+    setWallpapers, 
+    deleteWallpaperFromStore 
+  } = useAuthStore();
 
-  const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // If we already have wallpapers in the store, don't show the initial big loading skeleton
+  const [isLoading, setIsLoading] = useState(wallpapers.length === 0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [offset, setOffset] = useState(0);
+  const [offset, setOffset] = useState(wallpapers.length);
   const [hasMore, setHasMore] = useState(true);
 
   // Auth guard
@@ -79,7 +80,8 @@ export default function DashboardPage() {
       if (!user) return;
 
       if (isInitial) {
-        setIsLoading(true);
+        // Only show loading if we don't have cached data
+        if (wallpapers.length === 0) setIsLoading(true);
       } else {
         setIsLoadingMore(true);
       }
@@ -93,7 +95,7 @@ export default function DashboardPage() {
           setWallpapers(data);
           setOffset(data.length);
         } else {
-          setWallpapers((prev) => [...prev, ...data]);
+          setWallpapers([...wallpapers, ...data]);
           setOffset((prev) => prev + data.length);
         }
 
@@ -108,7 +110,7 @@ export default function DashboardPage() {
         setIsLoadingMore(false);
       }
     },
-    [user, offset]
+    [user, offset, setWallpapers, wallpapers]
   );
 
   useEffect(() => {
@@ -121,13 +123,15 @@ export default function DashboardPage() {
         }
       });
     }
-  }, [user?.id, isHydrated, fetchWallpapers]);
+    // We only want to fetch once on mount or when user changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isHydrated]);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
       await deleteWallpaper(id);
-      setWallpapers((prev) => prev.filter((w) => w.id !== id));
+      deleteWallpaperFromStore(id);
       toast.success("Wallpaper Deleted", {
         description: "It has been removed from your vault.",
       });

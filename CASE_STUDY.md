@@ -5,6 +5,8 @@ In an era of digital clutter and noisy aesthetics, **ZenWall** was born from a s
 
 Most AI art generators produce generic, over-saturated content. ZenWall takes the opposite approach, specializing in a "Signature Atmospheric Noir" style—a minimalist aesthetic designed to create calm and focus on the modern desktop.
 
+![Landing Page Showcase](/public/landing_page.png)
+
 ---
 
 ## 🧩 The Challenge
@@ -22,7 +24,7 @@ We utilized **Zustand** for lightweight, persistent state management. By impleme
 
 ### 4. Global Payment Integration (Stripe)
 We integrated **Stripe Checkout** to handle global payments. Using secure server-side API routes and **Stripe Webhooks**, we ensured that credit grants are atomic and fraud-resistant.
-> ![Stripe Checkout Flow](placeholder_for_stripe_screenshot)
+> ![Stripe Checkout Flow](/public/stripe_checkout.png)
 
 ### 5. Rigorous Quality Control
 To ensure production stability, we implemented a full testing and quality suite:
@@ -35,22 +37,22 @@ We bypassed traditional storage in favor of a **Signed Cloudinary Asset Pipeline
 
 ---
 
-## 📈 Visual Journey: The ZenWall Experience
-
-### 🌌 Atmospheric Landing
-![Landing Page Showcase](/Screenshot.webp)
 
 ### 🎨 Generation & Vault
-| AI Generation | Private Collection |
-| :---: | :---: |
-| ![Generation Interface](/Screenshot_2.webp) | ![Dashboard Vault](/ZenWall_Dashboard.webp) |
+| AI Generation |
+| :---: |
+| ![Generation Interface](/public/generation.png) |
+
+| Private Collection |
+| :---: |
+| ![Dashboard Vault](/public//dashboard.png) |
 
 ### 📱 Responsive Mastery (Mobile)
 > ZenWall adapts perfectly to the handheld experience.
 >
 | Mobile Generation | Mobile Profile |
 | :---: | :---: |
-| ![Mobile Screen 1](placeholder_mobile_1.webp) | ![Mobile Screen 2](placeholder_mobile_2.webp) |
+| ![Mobile Screen 1](/public/mobile_generation.png) | ![Mobile Screen 2](/public/mobile_dashboard.png) |
 
 ---
 
@@ -64,7 +66,7 @@ The UI utilizes **Glassmorphism** and **3D Perspective transforms**. By using `f
 
 To maintain this atmosphere during interaction, we replaced standard alert boxes with **Sonner Stacked Toasts**. This ensures that every event—from credit top-ups to art generation—is met with elegant, non-intrusive feedback that matches the platform's dark aesthetic.
 
-![ZenWall Dashboard Vault](/ZenWall_Dashboard.webp)
+![ZenWall Dashboard Vault](/public/dashboard.png)
 
 ---
 

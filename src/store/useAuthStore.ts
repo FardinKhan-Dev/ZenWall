@@ -3,16 +3,27 @@ import { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { getUserProfile, ensureProfile } from "@/lib/auth";
 
+export interface Wallpaper {
+  id: string;
+  prompt: string;
+  image_url: string;
+  created_at: string;
+}
+
 interface AuthState {
   user: User | null;
   profile: { first_name?: string; last_name?: string } | null;
   credits: number;
   isLoading: boolean;
   isHydrated: boolean;
+  wallpapers: Wallpaper[];
 
   // Actions
   setUser: (user: User | null) => void;
   setCredits: (credits: number) => void;
+  setWallpapers: (wallpapers: Wallpaper[]) => void;
+  addWallpaper: (wallpaper: Wallpaper) => void;
+  deleteWallpaperFromStore: (id: string) => void;
   deductCredit: () => void;
   initialize: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -51,13 +62,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
   credits: 0,
+  wallpapers: [],
   isLoading: true,
   isHydrated: false,
 
   setUser: (user) => set({ user }),
   setCredits: (credits) => set({ credits }),
+  setWallpapers: (wallpapers) => set({ wallpapers }),
+  addWallpaper: (wallpaper) => set((state) => ({ wallpapers: [wallpaper, ...state.wallpapers] })),
+  deleteWallpaperFromStore: (id) =>
+    set((state) => ({ wallpapers: state.wallpapers.filter((w) => w.id !== id) })),
   deductCredit: () => set((state) => ({ credits: Math.max(0, state.credits - 1) })),
-  reset: () => set({ user: null, profile: null, credits: 0, isLoading: false, isHydrated: true }),
+  reset: () =>
+    set({
+      user: null,
+      profile: null,
+      credits: 0,
+      wallpapers: [],
+      isLoading: false,
+      isHydrated: true,
+    }),
 
   signOut: async () => {
     await supabase.auth.signOut();
